@@ -1,0 +1,24 @@
+# 后端Go忽略项
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/go.sum
+.idea/
+.vscode/
+uploads/ # 本地上传的图片，不需要上传到仓库
+
+# 前端Vue忽略项
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
