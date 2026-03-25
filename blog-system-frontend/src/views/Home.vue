@@ -7,6 +7,16 @@
         <div class="header-right">
           <!-- 如果已登录，显示写博文按钮和用户信息 -->
           <template v-if="userStore.token">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索博文..."
+              class="search-input"
+              prefix-icon="Search"
+              clearable
+              @clear="handleSearch"
+              @keyup.enter="handleSearch"
+              style="width: 200px; margin-right: 16px"
+            />
             <el-button type="primary" @click="router.push('/write')">
               <el-icon><Edit /></el-icon> 写博文
             </el-button>
@@ -84,7 +94,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit, User, View, Clock } from '@element-plus/icons-vue'
+import { Edit, User, View, Clock, Search } from '@element-plus/icons-vue'
 import { getPostList } from '@/api'
 import { useUserStore } from '@/stores/user'
 
@@ -97,12 +107,17 @@ const postList = ref([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
+const searchKeyword = ref('')
 
 // 获取博文列表
 const fetchPostList = async () => {
   loading.value = true
   try {
-    const res = await getPostList({ page: currentPage.value, page_size: pageSize.value })
+    const res = await getPostList({ 
+      page: currentPage.value, 
+      page_size: pageSize.value,
+      keyword: searchKeyword.value
+    })
     postList.value = res.data.list
     total.value = res.data.total
   } catch (err) {
@@ -111,6 +126,13 @@ const fetchPostList = async () => {
     loading.value = false
   }
 }
+
+// 搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchPostList()
+}
+
 
 // 跳转到详情页
 const goToDetail = (id) => {

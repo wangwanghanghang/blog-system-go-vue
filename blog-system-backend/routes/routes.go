@@ -27,6 +27,8 @@ func SetupRoutes(r *gin.Engine) {
 		// 博文相关（公开查看）
 		public.GET("/posts", controller.GetPostList)
 		public.GET("/posts/:id", controller.GetPostDetail)
+		// 评论相关（公开查看）
+		public.GET("/posts/:id/comments", controller.GetPostComments)
 	}
 
 	// 3. 私有接口（需要登录）
@@ -40,6 +42,10 @@ func SetupRoutes(r *gin.Engine) {
 		private.POST("/posts", controller.CreatePost)
 		private.PUT("/posts/:id", controller.UpdatePost)
 		private.DELETE("/posts/:id", controller.DeletePost)
+
+		// 评论相关（发布和删除）
+		private.POST("/comments", controller.CreateComment)
+		private.DELETE("/comments/:id", controller.DeleteComment)
 
 		// ⭐ 新增：图片上传接口（需要登录才能上传）
 		private.POST("/upload/image", controller.UploadImage)

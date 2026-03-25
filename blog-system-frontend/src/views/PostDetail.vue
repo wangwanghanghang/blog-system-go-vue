@@ -63,21 +63,140 @@
 
           <!-- Markdown内容渲染 -->
           <div class="markdown-body" v-html="renderedContent"></div>
+
+          <el-divider />
+
+          <!-- 评论区 -->
+          <div class="comments-section">
+            <h3 class="section-title">
+              <el-icon><ChatLineRound /></el-icon> 评论 ({{ comments.length }})
+            </h3>
+            
+            <!-- 发表评论 -->
+            <div class="comment-form">
+              <el-input
+                v-model="commentContent"
+                type="textarea"
+                :rows="3"
+                placeholder="写下你的评论..."
+                maxlength="500"
+                show-word-limit
+              />
+              <div class="form-actions">
+                <el-button type="primary" @click="submitComment" :loading="submittingComment">发表评论</el-button>
+              </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="comment-list">
+              <div v-if="comments.length === 0" class="no-comments">暂无评论，快来抢沙发吧~</div>
+              <div v-else class="comment-item" v-for="comment in comments" :key="comment.id">
+                <el-avatar :size="40" class="comment-avatar">{{ comment.user?.username?.charAt(0).toUpperCase() }}</el-avatar>
+                <div class="comment-content">
+                  <div class="comment-header">
+                    <span class="comment-author">{{ comment.user?.nickname || comment.user?.username }}</span>
+                    <span class="comment-time">{{ formatDate(comment.created_at) }}</span>
+                  </div>
+                  <div class="comment-text">{{ comment.content }}</div>
+                  
+                  <div class="comment-actions" v-if="userStore.userId === comment.user_id || userStore.isAdmin">
+                    <el-button type="danger" link size="small" @click="handleDeleteComment(comment.id)">删除</el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </el-card>
       </template>
     </el-main>
   </div>
 </template>
 
+<style scoped>
+/* 原有样式保留... */
+
+.comments-section {
+  margin-top: 40px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.comment-form {
+  margin-bottom: 30px;
+}
+
+.form-actions {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.no-comments {
+  text-align: center;
+  color: #999;
+  padding: 40px 0;
+}
+
+.comment-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #333;
+  margin-right: 12px;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.comment-text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.comment-actions {
+  margin-top: 8px;
+}
+</style>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit, User, View, Clock, Delete } from '@element-plus/icons-vue'
+import { Edit, User, View, Clock, Delete, ChatLineRound } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
-import { getPostDetail, deletePost } from '@/api'
+import { getPostDetail, deletePost, getComments, createComment, deleteComment } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -96,6 +215,11 @@ marked.setOptions({
 const loading = ref(true)
 const post = ref(null)
 
+// 评论相关状态
+const comments = ref([])
+const commentContent = ref('')
+const submittingComment = ref(false)
+
 // 渲染后的HTML内容
 const renderedContent = computed(() => {
   if (!post.value) return ''
@@ -108,10 +232,65 @@ const fetchPostDetail = async () => {
   try {
     const res = await getPostDetail(route.params.id)
     post.value = res.data
+    // 获取评论
+    fetchComments()
   } catch (err) {
     ElMessage.error('获取博文详情失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 获取评论列表
+const fetchComments = async () => {
+  try {
+    const res = await getComments(route.params.id)
+    comments.value = res.data.comments
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// 提交评论
+const submitComment = async () => {
+  if (!userStore.token) {
+    ElMessage.warning('请先登录后再评论')
+    router.push('/login')
+    return
+  }
+  
+  if (!commentContent.value.trim()) {
+    ElMessage.warning('请输入评论内容')
+    return
+  }
+
+  submittingComment.value = true
+  try {
+    await createComment({
+      post_id: post.value.id,
+      content: commentContent.value
+    })
+    ElMessage.success('评论成功')
+    commentContent.value = ''
+    fetchComments()
+  } catch (err) {
+    ElMessage.error('评论失败')
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+// 删除评论
+const handleDeleteComment = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
+      type: 'warning'
+    })
+    await deleteComment(id)
+    ElMessage.success('删除成功')
+    fetchComments()
+  } catch (err) {
+    // cancelled
   }
 }
 

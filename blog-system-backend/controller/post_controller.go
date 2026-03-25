@@ -67,20 +67,23 @@ func GetPostList(c *gin.Context) {
 	// 从URL查询参数获取分页信息（如 /posts?page=1&page_size=10）
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "10")
+	// 获取搜索关键词
+	keyword := c.Query("keyword")
 
 	page, _ := strconv.Atoi(pageStr)
 	pageSize, _ := strconv.Atoi(pageSizeStr)
 
-	posts, total, err := service.GetPostList(page, pageSize)
+	posts, total, err := service.GetPostList(page, pageSize, keyword)
 	if err != nil {
 		Fail(c, "获取博文列表失败")
 		return
 	}
 
 	Success(c, gin.H{
-		"list":  posts,
-		"total": total,
-		"page":  page,
+		"list":      posts,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
 	})
 }
 

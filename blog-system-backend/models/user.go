@@ -15,4 +15,5 @@ type User struct {
 	Username  string         `gorm:"type:varchar(50);uniqueIndex;not null" json:"username"`
 	Password  string         `gorm:"type:varchar(255);not null" json:"-"`
 	Nickname  string         `gorm:"type:varchar(50)" json:"nickname"`
+	IsAdmin   bool           `gorm:"default:false" json:"is_admin"` // 是否为管理员
 }

@@ -34,14 +34,14 @@ func GetPostDetail(postID uint) (*models.Post, error) {
 }
 
 // GetPostList 获取博文列表业务
-func GetPostList(page, pageSize int) ([]models.Post, int64, error) {
+func GetPostList(page, pageSize int, keyword string) ([]models.Post, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if pageSize < 1 || pageSize > 100 {
 		pageSize = 10 // 默认每页10条
 	}
-	return dao.GetPostList(page, pageSize)
+	return dao.GetPostList(page, pageSize, keyword)
 }
 
 // UpdatePost 更新博文业务（只能更新自己的博文）

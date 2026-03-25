@@ -24,16 +24,25 @@ func GetPostByID(postID uint) (*models.Post, error) {
 }
 
 // GetPostList 分页查询博文列表（带作者信息，按创建时间倒序）
-func GetPostList(page, pageSize int) ([]models.Post, int64, error) {
+func GetPostList(page, pageSize int, keyword string) ([]models.Post, int64, error) {
 	var posts []models.Post
 	var total int64
 
+	// 创建查询会话
+	query := config.DB.Model(&models.Post{})
+
+	// 如果有搜索关键词
+	if keyword != "" {
+		likeArgs := "%" + keyword + "%"
+		query = query.Where("title LIKE ? OR content LIKE ?", likeArgs, likeArgs)
+	}
+
 	// 先查询总条数
-	config.DB.Model(&models.Post{}).Count(&total)
+	query.Count(&total)
 
 	// 再分页查询数据
 	offset := (page - 1) * pageSize
-	err := config.DB.Preload("Author").
+	err := query.Preload("Author").
 		Order("created_at DESC").
 		Limit(pageSize).
 		Offset(offset).
